@@ -1,3 +1,0 @@
-Problems with file, Kattis complains about runtime error even though RVIZ runs perfectly and follows line. Ask assistants during course about this.
-
-Furthermore, good idea to ask about why the first implementation (see dysfunctional file) doesn't work.
