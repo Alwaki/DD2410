@@ -4,13 +4,14 @@
 # Course: DD2410
 # Work: Laboration 0 - Introduction to ROS
 # Author: Alexander Wallén Kiessling
-# Date: 2:nd June 2020
-#
+# Date: 2 June 2020
 # Summary: This script is intended for control of a turtlebot 3 through ROS
 # functionality.
 
-# Imports
-# ------------------
+# SETUP
+# ---------------------
+
+# Import packages
 import rospy
 import actionlib
 import irob_assignment_1.msg
@@ -22,7 +23,6 @@ import tf2_geometry_msgs
 from math import atan2, hypot
 
 # Declare variables
-# ------------------
 # Use to transform between frames
 tf_buffer = None
 listener = None
@@ -42,12 +42,12 @@ max_linear_velocity = 0.5 # tried higher speeds, resulted in drifting
 # Max angular velocity (rad/s)
 max_angular_velocity = 1.0
 
-# Function definitions
-# ------------------
-# DESCRIPTION: "move" is a function that takes a given path, and converts it into
+# FUNCTION DEFINITIONS
+# ---------------------
+# Description: "move" is a function that takes a given path, and converts it into
 # information for movement to the robot
-# IN: custom struct type "path" which contains pose vector
-# OUT: void type functionality, no direct return. Publishes custom struct "twist"
+# In: custom struct type "path" which contains pose vector
+# Out: void type functionality, no direct return. Publishes custom struct "twist"
 def move(path):
     # Include variables from global scope to function scope
     global control_client, robot_frame_id, pub
@@ -90,10 +90,10 @@ def move(path):
     # Get new path from action server
     get_path()
 
-# DESCRIPTION: "get_path" is a function which communicates with action server
+# Description: "get_path" is a function which communicates with action server
 # through goal/result interaction. This makes use of the actionlib library.
-# IN: n/a
-# OUT: void type functionality, instead calls "move" function. (Note recursion)
+# In: n/a
+# Out: void type functionality, instead calls "move" function. (Note recursion)
 def get_path():
     # Include variables from global scope to function scope
     global action_client
@@ -107,7 +107,9 @@ def get_path():
     # Call move with path from action server
     move(action_client.get_result().path)
 
-# Driver code
+# DRIVER CODE
+# ---------------------
+
 if __name__ == "__main__":
     # Init node
     rospy.init_node("controller") # Only one node can be initialized at one time.
