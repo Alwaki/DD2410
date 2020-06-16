@@ -1,1 +1,1 @@
-Problems with file, Kattis complains about runtime error. Ask assistants during course about this.
+Problems with file, Kattis complains about runtime error even though RVIZ runs perfectly and follows line. Ask assistants during course about this.
