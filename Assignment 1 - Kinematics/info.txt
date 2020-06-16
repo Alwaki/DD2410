@@ -1,0 +1,1 @@
+Problems with file, Kattis complains about runtime error. Ask assistants during course about this.
