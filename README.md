@@ -5,4 +5,8 @@ Current problems:
 
 1. Assignment 2 part E runtime error in Kattis
 
-2. Don't understand why old E part of assignment 2 doesn't work as intended, merely changed solution as a fix.
+2. Old assignment 2 fix needs to be sorted out, changed math as a temp. fix
+
+3. Assignment 3 cost function of A* needs to be fixed
+
+4. Assignment 3 visited list could be changed to hash table implementation for performance boost
