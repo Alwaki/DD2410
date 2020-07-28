@@ -151,7 +151,7 @@ def kuka_IK(point, R, joint_positions):
         se = se[:-1]
         ae = T_complete[:,2]
         ae = ae[:-1]
-        orientation_error = 0.5*np.cross(ne.T, nd.T).T + np.cross(se.T, sd.T).T + np.cross(ae.T, ad.T).T
+        orientation_error = (np.cross(ne.T, nd.T).T + np.cross(se.T, sd.T).T + np.cross(ae.T, ad.T).T)/2
 
         # Concatenate position and orientation error into epsilon_x (combined error)
         epsilon_x = np.hstack((position_error, orientation_error))
