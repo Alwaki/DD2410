@@ -119,6 +119,7 @@ def Astar(car, current):
     while not ((goal(car, current)) or heapCount == 0):
         current = h.heappop(minHeap)
         heapCount -= 1
+        options = [] #list for picking the best of children
         for phi in [-m.pi/4, 0, m.pi/4]: #Full turns or straight are optimal, according to Pontryagins maximum principle
             #calculate new values for each phi (steering angle)
             xn, yn, thetan = step(car, current.x, current.y, current.theta, phi)
@@ -133,8 +134,11 @@ def Astar(car, current):
                 #create child from new data
                 child = Node(xn, yn, thetan, phi, totalCost, costC, newTime, current)
                 #push child onto heap
-                h.heappush(minHeap, child)
-                heapCount += 1
+                options.append(child)
+        if options == []:
+            h.heappush(minHeap, current.parent) #if none of children are viable, step back one node
+        else:
+            h.heappush(minHeap, min(options))
     return current
 
 # Description: Recreates the path taken by a pathfinding algorithm.
