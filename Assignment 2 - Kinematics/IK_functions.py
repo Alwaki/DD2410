@@ -145,29 +145,34 @@ def kuka_IK(point, R, joint_positions):
         nd = np.transpose(R)[0]
         sd = np.transpose(R)[1]
         ad = np.transpose(R)[2]
-        ne = np.transpose(T_complete)[0]
+        ne = T_complete[:,0]
         ne = ne[:-1]
-        se = np.transpose(T_complete)[1]
-        se = ne[:-1]
-        ae = np.transpose(T_complete)[2]
-        ae = ne[:-1]
-        orientation_error = (np.cross(ne.T, nd.T).T + np.cross(se.T, sd.T).T + np.cross(ae.T, ad.T).T)/2
+        se = T_complete[:,1]
+        se = se[:-1]
+        ae = T_complete[:,2]
+        ae = ae[:-1]
+        orientation_error = 0.5*np.cross(ne.T, nd.T).T + np.cross(se.T, sd.T).T + np.cross(ae.T, ad.T).T
 
         # Concatenate position and orientation error into epsilon_x (combined error)
         epsilon_x = np.hstack((position_error, orientation_error))
 
         # From Lecture 4, iterative solution:
         # Step 1: x_hat = K(theta_hat)
+        # Done above
 
         # Step 2: epsilon_x = x_hat - x
+        # Done above
 
         # Step 3: epsilon_theta = inv_J(theta_hat) * epsilon_x
-        epsilon_theta = np.linalg.multi_dot([J_inv, q]) * epsilon_x
+        epsilon_theta = np.dot(J_inv, epsilon_x)
+
         # Step 4: theta_hat = theta_hat - epsilon_theta
-        q = q - epsilon_theta
+        q = q + epsilon_theta
+
         # Step 5: check if epsilon_x <= tolerance
         if max(epsilon_x) < tolerance:
             return q
+            
     return q
 
 # DRIVER CODE (Testing purposes)
