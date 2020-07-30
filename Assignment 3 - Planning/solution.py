@@ -20,11 +20,11 @@ import math as m
 import time as t #TESTING; REMOVE LATER
 
 #create instance of car for testing purposes
-#car = Car()
+car = Car()
 
 # Create Node class for storing data values
 class Node():
-    def __init__(self, x, y, theta, phi, cost, travelled, time = 0, parent = None):
+    def __init__(self, x, y, theta, phi, cost, travelled, time = 0, parent = None, visited = False):
         self.x = x
         self.y = y
         self.theta = theta
@@ -33,6 +33,7 @@ class Node():
         self.travelled = travelled
         self.time = time
         self.parent = parent
+        self.visited = visited
 
     # Object operators for comparison in heap
     def __eq__(self, other):
@@ -66,28 +67,29 @@ def outsideBounds(car, xn, yn):
 # Out: Boolean truth statement
 def collision(car, xn, yn):
     for i in range(len(car.obs)): # Check for every obstacle that the x and y coordinate does not result in collision
-        if (car.obs[i][0] - car.obs[i][2] - 0.1 <= xn <= car.obs[i][0] + car.obs[i][2] + 0.1) and (car.obs[i][1] - car.obs[i][2] - 0.1 <= yn <= car.obs[i][1] + car.obs[i][2] + 0.1):
+        if (car.obs[i][0] - car.obs[i][2] <= xn <= car.obs[i][0] + car.obs[i][2]) and (car.obs[i][1] - car.obs[i][2]<= yn <= car.obs[i][1] + car.obs[i][2]):
             return True
     return False
 
-# Description: Checks if the proposed coordinate has already been visited. Returns
-# true if the coordinate has been visited, otherwise it adds the coordinate to the
-# table, and returns false. As such, only one check can return false per coordinate.
-# In: x-coordinate (float) and y-coordinate (float) as well as hashtable (python
-# dictionary)
+# Description: Checks if the proposed node has already been visited.
+# In: node class
 # Out: Boolean truth statement
-def visited(xn, yn, table):
-    if xn in table:
-        if table[xn] == yn:
-            return True
-    table[xn] = yn
+def visited(current):
+    if current.visited:
+        return True
+    current.visited = True
     return False
 
 # Description: Gathers other boolean functions to check if coordinates are valid.
 # In: see used functions descriptions.
 # Out: Boolean truth statement.
-def validCheck(car, xn, yn, table):
-    return not (collision(car, xn, yn) and outsideBounds(car, xn, yn) and visited(xn, yn, table))
+def validCheck(car, xn, yn, current):
+    if not collision(car, xn, yn):
+        if not outsideBounds(car, xn, yn):
+            if not visited(current):
+                return True
+    return False
+
 
 # Description: Checks if coordinates are within specified goal area, returns
 # true if within goal area, false otherwise.
@@ -99,7 +101,7 @@ def goal(car, current):
     x = current.x
     y = current.y
 
-    if (m.hypot(current.x-car.xt,current.y-car.yt)) <= 1.5: #goal tolerance of 1.5m
+    if (m.hypot(current.x-car.xt,current.y-car.yt)) <= 1.4: #goal tolerance of 1.4m
         return True
     return False
 
@@ -112,19 +114,24 @@ def goal(car, current):
 # Out: The finishing node, with attached parent pointers.
 def Astar(car, current):
     minHeap = [] #initialize heap as list
-    hashTable = {} #initialize hash table for checking visited nodes
     h.heappush(minHeap, current) #push initial node onto heap
     heapCount = 1 #add upon pushes to heap, subtract upon pop
     # Iterate through nodes in priority queue
     while not ((goal(car, current)) or heapCount == 0):
         current = h.heappop(minHeap)
         heapCount -= 1
-        options = [] #list for picking the best of children
+
+        #prints for testing purposes & pause
+        #print("The current coordinates are x: " + str(current.x) + " and y: " + str(current.y))
+        #print("The current cost is: " + str(current.cost))
+        #print("The heapcount is: " + str(heapCount))
+        #t.sleep(1)
+
         for phi in [-m.pi/4, 0, m.pi/4]: #Full turns or straight are optimal, according to Pontryagins maximum principle
             #calculate new values for each phi (steering angle)
             xn, yn, thetan = step(car, current.x, current.y, current.theta, phi)
             #control feasibility of position
-            if validCheck(car, xn, yn, hashTable):
+            if validCheck(car, xn, yn, current):
                 #calculate costs for these directives
                 costC = current.travelled + m.hypot(current.x - xn, current.y - yn) #cost of travel from start position
                 costG = m.hypot(car.xt - xn, car.yt - yn) #current optimal distance to goal
@@ -134,11 +141,9 @@ def Astar(car, current):
                 #create child from new data
                 child = Node(xn, yn, thetan, phi, totalCost, costC, newTime, current)
                 #push child onto heap
-                options.append(child)
-        if options == []:
-            h.heappush(minHeap, current.parent) #if none of children are viable, step back one node
-        else:
-            h.heappush(minHeap, min(options))
+                h.heappush(minHeap, child)
+                heapCount += 1
+
     return current
 
 # Description: Recreates the path taken by a pathfinding algorithm.
@@ -158,6 +163,29 @@ def pathwrite(endNode):
     times.append(endNode.time + 0.1) #add 1 extra time stamp according to instructions
     return controls, times
 
+# Description: Recreates the positions of the path taken
+# In: A node with attached parent pointers
+# Out: Arrays of coordinates (x,y) from the nodes travelled in the order of the path taken.
+def pathVisualize(endNode):
+    current = endNode
+    x = [] #initialize array
+    y = [] #initialize array
+    while current != None: #trace path from end to start, append to array
+        x.append(current.x)
+        y.append(current.y)
+        current = current.parent #change to new node
+
+    x.reverse() #reverse path arrays, for correct order instruction set
+    y.reverse()
+
+    return x, y
+
+def exportPath(x,y):
+    File = open("path.txt", "w")
+    for i in range(len(x)):
+        File.write(str(x[i]) + ";" + str(y[i]) + ";")
+
+
 # Description: Creates a solution for moving a car from an initial point to
 # a point within a distance of a specified coordinate, whilst staying within
 # bounds, avoiding obstacles and remaining efficient.
@@ -165,9 +193,12 @@ def pathwrite(endNode):
 # Out: Arrays with a steering angle for the car, as well as time stamps with
 # increments of 0.01 seconds.
 def solution(car):
+    print("Test started")
     startNode = Node(car.x0, car.y0, 0, 0.2, 0, 0, 0)
     endNode = Astar(car, startNode)
     controls, times = pathwrite(endNode)
+    #x, y = pathVisualize(endNode)
+    #exportPath(x, y)
     return controls, times
 
 # DRIVER CODE (for testing)
