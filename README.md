@@ -1,11 +1,11 @@
 # DD2410
 Assignments + Project for robotics course KTH
 
-Current problems:
+Current Status:
 
-1. Can't use Kattis to check solutions. Contacted staff, said that certain (vital) python libraries were not availible during the summer.
+KINEMATICS: Finished kinematics problem, E and C parts are completed. Ready for turnin, but Kattis is not yet functional with additional python libraries. Supposed to be fixed at end of summer according to staff.
 
-2. Planning algorithm (A*) behaves unexpectedly with obstacles. Will try to implement a discrete (grid) map, and see if that fixes the issues. Currently working on this lab.
+PLANNING: Changed algorithm from A* to RRT. Current implementation of algorithm has been able to solve 6/6 E cases, and 4/6 C cases. However, due to random nature of algorithm, results vary. Problem with consistency of C cases, often gets stuck in corridors. Idea to fix is geometrically limiting the random generation of new coordinates for certain intervals. Furthermore, need to add comments for this code.
 
-3. Mapping algorithm have not yet attempted C part.
+MAPPING: Finished part E, however not yet attempted to implement part C.
 
