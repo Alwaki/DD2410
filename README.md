@@ -3,7 +3,7 @@ Assignments + Project for robotics course KTH
 
 Current Status:
 
-INTRODUCTION: Finished rudimentary part (so ready for presentation), however not implemented a more sophisticated action server. 
+ROS: Finished rudimentary part (so ready for presentation), however not implemented a more sophisticated action server. 
 
 KINEMATICS: Finished kinematics problem, E and C parts are completed. Ready for turnin, but Kattis is not yet functional with additional python libraries. Supposed to be fixed at end of summer according to staff.
 
