@@ -17,9 +17,8 @@
 # Import packages
 from dubins import *
 import numpy as np
-import math as m
 
-# Create instance (TESTING PURPOSES)
+# Create instance
 car = Car()
 
 # DEFINITIONS
@@ -28,13 +27,14 @@ class tree(object):
     def __init__(self, car):
         self.car = car
         self.vertices = []
-        self.iteration_limit = 5000
-        self.bias = 5
-        self.backward_limit = 20
-        self.forward_limit = 100
+        self.iteration_limit = 3000
+        self.bias = 4
+        self.backward_limit = 15
+        self.forward_limit = 200
 
     def build_tree(self):
         goal_found = False
+        print("The thought goal is in x = " + str(car.xt) + " y = " + str(car.yt))
         for iteration in range(self.iteration_limit):
             random = self.random_state(iteration)
             nearest = self.nearest_neighbour(random)
@@ -44,22 +44,22 @@ class tree(object):
             for i in range(self.forward_limit):
                 phi = self.select_input(new, random)
                 xn, yn, thetan = step(car, new.x_current, new.y_current, new.theta_current, phi)
-                #print(xn, yn)
+
                 if self.car._environment.safe(xn, yn):
                     new.phi.append(phi)
                     new.x.append(xn)
                     new.y.append(yn)
                     new.theta.append(thetan)
                     new.set_position(xn, yn, thetan)
-                    if m.hypot((xn - car.xt),(yn - car.yt)) < 1.4:
+                    if ((car.xt-xn)**2 + (car.yt-yn)**2)**0.5 < 1.0:
                         goal_found = True
                         break
                 else:
                     try:
                         for i in range(self.backward_limit):
-                            del new.x_current[-1]
-                            del new.y_current[-1]
-                            del new.theta_current[-1]
+                            del new.x[-1]
+                            del new.y[-1]
+                            del new.theta[-1]
                             del new.phi[-1]
                         new.set_position(new.x[-1],new.y[-1], new.theta[-1])
                     except:
@@ -77,11 +77,11 @@ class tree(object):
         return np.random.uniform(self.car.xlb, self.car.xub), np.random.uniform(self.car.ylb, self.car.yub)
 
     def nearest_neighbour(self, random):
-        distance = 100000
+        distance = 2048
         nearest = None
         for item in self.vertices:
             #avoid complex calculations to save computational power
-            temp_distance = m.hypot((item.x_current - random[0]), (item.y_current - random[1]))
+            temp_distance = np.hypot((item.x_current - random[0]), (item.y_current - random[1]))
             if temp_distance < distance:
                 distance = temp_distance
                 nearest = item
@@ -90,9 +90,9 @@ class tree(object):
     def select_input(self, nearest, random):
         desired_theta = np.arctan2(random[0] - nearest.x_current, random[1] - nearest.y_current) - nearest.theta_current
         if desired_theta > 0.005:
-            return m.pi/4
+            return np.pi/4
         if desired_theta < -0.005:
-            return -m.pi/4
+            return -np.pi/4
         return 0
 
     def extract_path(self, vertex):
@@ -111,6 +111,7 @@ class tree(object):
         for i in range(len(controls)):
             times.append(i * 0.01 + 0.01)
         return controls, times
+
 
 class vertex():
     def __init__(self):
@@ -139,6 +140,10 @@ def solution(car):
 
     #build tree to find feasible path
     end = path_finder.build_tree()
+
+    #TESTING PRINTS
+    print("The final node is in x = " + str(end.x_current) + " y = " + str(end.y_current))
+    print("The actual goal is in x = " + str(car.xt) + " y = " + str(car.yt))
 
     #extract path from last vertex
     controls, times = path_finder.extract_path(end)
