@@ -1,0 +1,221 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+# {Alexander Wallen Kiessling}
+# {19970408-0754}
+# {akie@kth.se}
+
+# Course DD2410
+# Project: Assignment 3
+# Info: This assignment concerns planning the path of a Dubin's car.
+# The algorithm chosen for this problem is RRT.
+# Additionally, the algorithm is based on cpslab.snu.ac.kr
+# instructions for assignment 2.
+
+# SETUP
+# ---------------------
+
+# Import packages
+from dubins import *
+import numpy as np
+
+# DEFINITIONS
+# ---------------------
+class tree(object):
+
+    def __init__(self, car):
+
+        '''
+        car: imported object from dubins
+
+        vertices: tree nodes implemented as list
+
+        iteration_limit: parameter which controls the amount of nodes that can be generated
+
+        bias: parameter which controls how often the goal is generated as the given point
+
+        backward_limit: parameter which controls steps backwards upon collision
+
+        forward_limit: parameter which controls how many steps are moved from a point
+        '''
+
+        self.car = car
+        self.vertices = []
+        self.iteration_limit = 2000
+        self.bias = 15
+        self.backward_limit = 20
+        self.forward_limit = 100
+
+    def build_tree(self):
+
+        ''' Create tree structure of vertices, adding nodes iteratively
+            and in the direction of a randomly given point inside the map. '''
+
+        #goal flag, initially set to false
+        goal_found = False
+
+        for iteration in range(self.iteration_limit):
+
+            #generate a random point on the map
+            random = self.random_state(iteration)
+
+            #find the closest vertex to that point which is a member of our tree
+            nearest = self.nearest_neighbour(random)
+
+            #instanciate a new vertex, and link it to the closest vertex
+            new = vertex()
+            new.set_position(nearest.x_current, nearest.y_current, nearest.theta_current)
+            new.parent = nearest
+
+            #drive towards the random point from the nearest
+            for i in range(self.forward_limit):
+
+                #generate a control input in order to steer
+                phi = self.select_input(new, random)
+
+                #use control input to step, generating new output coordinates and heading as the car moves
+                xn, yn, thetan = step(self.car, new.x_current, new.y_current, new.theta_current, phi)
+
+                #check that the car is safe before adding new coordinates.
+                if self.car._environment.safe(xn, yn):
+                    new.phi.append(phi)
+                    new.x.append(xn)
+                    new.y.append(yn)
+                    new.theta.append(thetan)
+                    new.set_position(xn, yn, thetan)
+
+                    #check if the new coordinate is within goal tolerance. If yes, set goal flag as true
+                    if ((self.car.xt-xn)**2 + (self.car.yt-yn)**2)**0.5 < 1.0:
+                        goal_found = True
+                        break
+
+                #if car is not safe (eg collision or outside bounds) then attempt backing up
+                else:
+
+                    #first check that there is a minimum distance driven, so node is worth saving
+                    if len(new.phi) > 10:
+
+                        #include try statement, as potentially backward_limit > length of input list
+                        try:
+                            #remove enough inputs that the car is back in a "safe" place
+                            for i in range(self.backward_limit):
+                                del new.x[-1]
+                                del new.y[-1]
+                                del new.theta[-1]
+                                del new.phi[-1]
+                            new.set_position(new.x[-1],new.y[-1], new.theta[-1])
+
+                        #if there are no more inputs, then skip deletion phase
+                        except:
+                            pass
+
+            #before adding vertex, check that final position is safe
+            if self.car._environment.safe(new.x_current, new.y_current):
+                self.vertices.append(new)
+
+            #if goal flag is true, break and return the latest node (which is in goal zone)
+            if goal_found == True:
+                print("feasible path found")
+                return new
+
+        #if node limit is reached and goal flag is still not true, algorithm has failed to find path
+        print("no feasible path")
+        return new
+
+    def random_state(self, iteration):
+        if iteration % self.bias == 0:
+            return self.car.xt, self.car.yt
+
+        valid = False
+        while valid == False:
+            point_x = np.random.uniform(self.car.xlb, self.car.xub)
+            point_y = np.random.uniform(self.car.ylb, self.car.yub)
+            if self.car._environment.safe(point_x, point_y):
+                valid = True
+        point = point_x, point_y
+        return point
+
+    def nearest_neighbour(self, random):
+        distance = 2048
+        nearest = None
+        for item in self.vertices:
+            temp_distance = np.hypot((item.x_current - random[0]), (item.y_current - random[1]))
+            if temp_distance < distance:
+                distance = temp_distance
+                nearest = item
+        return nearest
+
+    def select_input(self, nearest, random):
+        desired_theta = np.arctan2(random[0] - nearest.x_current, random[1] - nearest.y_current) - nearest.theta_current
+        if desired_theta > np.pi/8:
+            return np.pi/4
+        if desired_theta < -np.pi/8:
+            return -np.pi/4
+        if desired_theta > np.pi/16:
+            return np.pi/16
+        if desired_theta < -np.pi/16:
+            return -np.pi/16
+        return 0
+
+    def extract_path(self, vertex):
+        control_list = []
+
+        while vertex.parent != None:
+            control_list.append(vertex.phi)
+            vertex = vertex.parent
+            position = vertex.x_current, vertex.y_current
+            print("x = " + str(position[0])+ " y = " + str(position[1]))
+        #TESTING PRINTS
+        #print("The considered start is x = " + str(position[0])+ " y = " + str(position[1]))
+        #print("The real start is x = " + str(self.car.x0) + " y = " + str(self.car.y0))
+        control_list.reverse()
+        controls = []
+        for i in control_list:
+            for j in i:
+                controls.append(j)
+        times = [0]
+        for i in range(len(controls)):
+            times.append(i * 0.01 + 0.01)
+        return controls, times
+
+
+class vertex():
+    def __init__(self):
+        self.x = []
+        self.y = []
+        self.theta = []
+        self.phi = []
+        self.parent = None
+        self.x_current = None
+        self.y_current = None
+        self.theta_current = None
+
+    def set_position(self, x, y, theta):
+        self.x_current = x
+        self.y_current = y
+        self.theta_current = theta
+
+def solution(car):
+    #create vertex for start
+    start = vertex()
+    start.set_position(car.x0, car.y0, 0)
+
+    #initialize tree with start vertex
+    path_finder = tree(car)
+    path_finder.vertices.append(start)
+
+    #build tree to find feasible path
+    end = path_finder.build_tree()
+
+    #TESTING PRINTS
+    #print("The final node is in x = " + str(end.x_current) + " y = " + str(end.y_current))
+    #print("The actual goal is in x = " + str(car.xt) + " y = " + str(car.yt))
+
+    #extract path from last vertex
+    controls, times = path_finder.extract_path(end)
+
+    return controls, times
+
+# DRIVER CODE (test purposes)
+# ---------------------
+if __name__ == '__main__':
+    pass
